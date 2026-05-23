@@ -18,4 +18,7 @@ add_executable(BTRFS app/main.cpp
         include/fs/Inode.h
         include/fs/BtrfsKey.h
         include/fs/BtrfsNo.h
-        include/fs/BtrfsBloco.h)
+        include/fs/BtrfsBloco.h
+        include/fs/GerenciadorArvoreB.h
+        src/GerenciadorArvoreB.cpp
+)
