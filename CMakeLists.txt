@@ -12,4 +12,6 @@ include_directories(include)
 add_executable(BTRFS app/main.cpp
         src/DiscoVirtualEmMemoria.cpp
         src/DiscoVirtualEmMemoria.h
-        include/fs/DiscoVirtual.h)
+        include/fs/DiscoVirtual.h
+        include/fs/Superbloco.h
+        include/fs/MapaDeBits.h)
