@@ -28,10 +28,3 @@ std::expected<uint64_t, ErroDisco> GerenciadorArvoreB::clonar_bloco_cow(uint64_t
 
 uint64_t GerenciadorArvoreB::obter_raiz_atual() const { return bloco_raiz_atual; }
 uint64_t GerenciadorArvoreB::obter_geracao_atual() const { return geracao_atual; }
-
-std::expected<std::vector<std::byte>, ErroDisco> GerenciadorArvoreB::buscar_item(const ChaveBtrfs&) {
-    return std::vector<std::byte>{};
-}
-std::expected<void, ErroDisco> GerenciadorArvoreB::inserir_item(const ChaveBtrfs&, std::span<const std::byte>) {
-    return {};
-}
