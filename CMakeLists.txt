@@ -16,4 +16,5 @@ add_executable(BTRFS app/main.cpp
         include/fs/Superbloco.h
         include/fs/MapaDeBits.h
         include/fs/Inode.h
-        include/fs/GerenciadorDeInodes.h)
+        include/fs/GerenciadorDeInodes.h
+        include/fs/Diretorio.h)
