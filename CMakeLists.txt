@@ -24,4 +24,5 @@ add_executable(BTRFS app/main.cpp
         include/fs/Arquivo.h
         include/fs/Diretorio.h
         include/fs/SistemaDeArquivos.h
+        src/SistemaDeArquivos.cpp
 )
