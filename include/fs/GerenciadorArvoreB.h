@@ -57,6 +57,25 @@ public:
     }
 
     template <typename TPayload>
+    std::expected<std::vector<std::pair<ChaveBtrfs, TPayload>>, ErroDisco> listar_itens_com_chave(uint64_t id_objeto, BtrfsTipoItem tipo) {
+        std::array<std::byte, TAMANHO_BLOCO> buffer{};
+        auto res = disco.ler_bloco(bloco_raiz_atual, buffer);
+        if (!res) return std::unexpected(res.error());
+
+        auto* bloco = reinterpret_cast<BlocoArvoreB*>(buffer.data());
+        std::vector<std::pair<ChaveBtrfs, TPayload>> resultados;
+
+        for (uint16_t i = 0; i < bloco->cabecalho.qtd_itens; ++i) {
+            if (bloco->itens[i].chave.id_objeto == id_objeto && bloco->itens[i].chave.tipo == tipo) {
+                TPayload payload_recuperado;
+                std::memcpy(&payload_recuperado, bloco->itens[i].dados.data(), sizeof(TPayload));
+                resultados.emplace_back(bloco->itens[i].chave, payload_recuperado);
+            }
+        }
+        return resultados;
+    }
+
+    template <typename TPayload>
     std::expected<void, ErroDisco> inserir_item_tipado(const ChaveBtrfs& chave, const TPayload& payload) {
         static_assert(sizeof(TPayload) <= TAMANHO_PAYLOAD_MAX, "Erro: Payload muito grande para o Slot!");
 

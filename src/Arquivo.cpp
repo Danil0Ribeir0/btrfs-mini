@@ -1,6 +1,7 @@
 #include "fs/Arquivo.h"
 #include "fs/Inode.h"
 #include <algorithm>
+#include <ranges>
 
 constexpr std::size_t TAMANHO_CHUNK = 256;
 
@@ -32,9 +33,8 @@ std::expected<void, ErroDisco> Arquivo::escrever(std::span<const std::byte> dado
     }
 
     ChaveBtrfs chave_inode{id_inode, BtrfsTipoItem::InodeItem, 0};
-    auto res_inode = arvore.buscar_item_tipado<Inode>(chave_inode);
 
-    if (res_inode) {
+    if (auto res_inode = arvore.buscar_item_tipado<Inode>(chave_inode)) {
         Inode inode_atual = *res_inode;
         inode_atual.tamanho_bytes = dados.size();
         arvore.inserir_item_tipado(chave_inode, inode_atual);
@@ -44,13 +44,19 @@ std::expected<void, ErroDisco> Arquivo::escrever(std::span<const std::byte> dado
 }
 
 std::expected<std::vector<std::byte>, ErroDisco> Arquivo::ler() {
-    auto res_chunks = arvore.listar_itens_tipado<ChunkDados>(id_inode, BtrfsTipoItem::ExtentDados);
+    auto res_chunks = arvore.listar_itens_com_chave<ChunkDados>(id_inode, BtrfsTipoItem::ExtentDados);
     if (!res_chunks) return std::unexpected(res_chunks.error());
 
+    std::sort(res_chunks->begin(), res_chunks->end(),
+        [](const auto& a, const auto& b) {
+            return a.first.offset < b.first.offset;
+        });
+
     std::vector<std::byte> resultado;
-    
-    for (const auto& chunk : *res_chunks) {
-        resultado.insert(resultado.end(), chunk.bytes.begin(), chunk.bytes.begin() + chunk.tamanho_util);
+
+    for (const auto &val: *res_chunks | std::views::values) {
+        const auto&[bytes, tamanho_util] = val;
+        resultado.insert(resultado.end(), bytes.begin(), bytes.begin() + tamanho_util);
     }
     
     return resultado;

@@ -9,9 +9,10 @@ struct RegistroDiretorio {
     bool eh_diretorio;
 };
 
-Diretorio::Diretorio(GerenciadorArvoreB& arvore_ref, uint64_t id) : arvore(arvore_ref), id_inode(id) {}
+Diretorio::Diretorio(GerenciadorArvoreB& arvore_ref, uint64_t id, std::function<uint64_t()> gerador)
+    : arvore(arvore_ref), id_inode(id), gerador_id(std::move(gerador)) {}
 
-std::expected<uint64_t, ErroDisco> Diretorio::criar_entrada_interna(const std::string& nome, TipoInode tipo, bool eh_diretorio) const {
+std::expected<uint64_t, ErroDisco> Diretorio::criar_entrada_interna(const std::string& nome, TipoInode tipo, bool eh_diretorio) {
     uint64_t novo_id = gerador_id();
 
     Inode inode_novo{};
@@ -38,21 +39,19 @@ std::expected<uint64_t, ErroDisco> Diretorio::criar_entrada_interna(const std::s
     return novo_id;
 }
 
-std::expected<Arquivo, ErroDisco> Diretorio::criar_arquivo(const std::string& nome) const {
+std::expected<Arquivo, ErroDisco> Diretorio::criar_arquivo(const std::string& nome) {
     auto res = criar_entrada_interna(nome, TipoInode::Arquivo, false);
     if (!res) return std::unexpected(res.error());
-
     return Arquivo(arvore, *res);
 }
 
-std::expected<Diretorio, ErroDisco> Diretorio::criar_diretorio(const std::string& nome) const {
+std::expected<Diretorio, ErroDisco> Diretorio::criar_diretorio(const std::string& nome) {
     auto res = criar_entrada_interna(nome, TipoInode::Diretorio, true);
     if (!res) return std::unexpected(res.error());
-
     return Diretorio(arvore, *res, gerador_id);
 }
 
-std::expected<std::vector<InfoEntrada>, ErroDisco> Diretorio::listar() const {
+std::expected<std::vector<InfoEntrada>, ErroDisco> Diretorio::listar() {
     auto res_itens = arvore.listar_itens_tipado<RegistroDiretorio>(this->id_inode, BtrfsTipoItem::ItemDiretorio);
     if (!res_itens) return std::unexpected(res_itens.error());
 
@@ -67,7 +66,7 @@ std::expected<std::vector<InfoEntrada>, ErroDisco> Diretorio::listar() const {
     return resultado;
 }
 
-std::expected<Arquivo, ErroDisco> Diretorio::abrir_arquivo(const std::string& nome) const {
+std::expected<Arquivo, ErroDisco> Diretorio::abrir_arquivo(const std::string& nome) {
     auto res_itens = listar();
     if (!res_itens) return std::unexpected(res_itens.error());
 
