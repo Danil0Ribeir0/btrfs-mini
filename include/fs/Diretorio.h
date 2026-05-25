@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <expected>
+#include <functional>
 
 struct InfoEntrada {
     std::string nome;
@@ -15,14 +16,14 @@ class Diretorio {
 private:
     GerenciadorArvoreB& arvore;
     uint64_t id_inode;
+    std::function<uint64_t()> gerador_id;
 
 public:
-    Diretorio(GerenciadorArvoreB& arvore_ref, uint64_t id);
+    Diretorio(GerenciadorArvoreB& arvore_ref, uint64_t id, std::function<uint64_t()> gerador);
 
     std::expected<Arquivo, ErroDisco> criar_arquivo(const std::string& nome);
-    std::expected<Arquivo, ErroDisco> abrir_arquivo(const std::string& nome);
     std::expected<Diretorio, ErroDisco> criar_diretorio(const std::string& nome);
-    
+    std::expected<Arquivo, ErroDisco> abrir_arquivo(const std::string& nome);
     std::expected<std::vector<InfoEntrada>, ErroDisco> listar();
 
     [[nodiscard]] uint64_t obter_id() const { return id_inode; }

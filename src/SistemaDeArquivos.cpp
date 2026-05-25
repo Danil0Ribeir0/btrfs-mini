@@ -66,5 +66,6 @@ std::expected<void, ErroDisco> SistemaDeArquivos::montar() {
 
 std::expected<Diretorio, ErroDisco> SistemaDeArquivos::obter_raiz() {
     if (!arvore) return std::unexpected(ErroDisco::NaoMontado);
-    return Diretorio(*arvore, ID_DIRETORIO_RAIZ);
+
+    return Diretorio(*arvore, ID_DIRETORIO_RAIZ, [this]() { return this->gerar_novo_id(); });
 }
