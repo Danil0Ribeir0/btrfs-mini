@@ -3,14 +3,14 @@
 GerenciadorArvoreB::GerenciadorArvoreB(IDiscoVirtual& disco_ref, MapaDeBits& mapa, uint64_t raiz, uint64_t geracao)
     : disco(disco_ref), mapa_blocos(mapa), bloco_raiz_atual(raiz), geracao_atual(geracao) {}
 
-std::expected<uint64_t, ErroDisco> GerenciadorArvoreB::clonar_bloco_cow(uint64_t bloco_origem) {
+std::expected<uint64_t, ErroDisco> GerenciadorArvoreB::clonar_bloco_cow(const uint64_t bloco_origem) const {
     auto novo_bloco_opt = mapa_blocos.alocar_bloco_livre();
     if (!novo_bloco_opt) {
         return std::unexpected(ErroDisco::ForaDosLimites);
     }
     uint64_t novo_bloco = *novo_bloco_opt;
 
-    std::array<std::byte, TAMANHO_BLOCO> buffer;
+    std::array<std::byte, TAMANHO_BLOCO> buffer{};
     auto res_leitura = disco.ler_bloco(bloco_origem, buffer);
     if (!res_leitura) return std::unexpected(res_leitura.error());
 
@@ -20,8 +20,6 @@ std::expected<uint64_t, ErroDisco> GerenciadorArvoreB::clonar_bloco_cow(uint64_t
 
     auto res_escrita = disco.escrever_bloco(novo_bloco, buffer);
     if (!res_escrita) return std::unexpected(res_escrita.error());
-
-    mapa_blocos.liberar_bloco(bloco_origem);
 
     return novo_bloco;
 }
