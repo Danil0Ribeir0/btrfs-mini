@@ -31,7 +31,7 @@ int main() {
     std::cout << "          MINI-BTRFS SHELL INTERATIVO             \n";
     std::cout << "==================================================\n";
 
-    const std::size_t TOTAL_BLOCOS = 64;
+    constexpr std::size_t TOTAL_BLOCOS = 64;
     const std::string ARQUIVO_DISCO = "btrfs_disco.bin";
     DiscoVirtualEmMemoria disco(TOTAL_BLOCOS);
 
@@ -54,14 +54,14 @@ int main() {
         std::cout << "[FS] Formatando disco via Copy-on-Write...\n";
         if (!fs.formatar()) {
             std::cerr << "Erro durante formatação do filesystem.\n";
-            disco.desmontar();
+            if (!disco.desmontar()) {}
             return 1;
         }
     } else {
         std::cout << "[FS] Montando sistema de arquivos...\n";
         if (!fs.montar()) {
             std::cerr << "Disco existe mas não é um BTRFS válido (ou está corrompido).\n";
-            disco.desmontar();
+            if (!disco.desmontar()) {}
             return 1;
         }
     }
@@ -69,7 +69,7 @@ int main() {
     auto raiz_opt = fs.obter_raiz();
     if (!raiz_opt) {
         std::cerr << "Falha ao obter a pasta raiz do sistema.\n";
-        disco.desmontar();
+        if (!disco.desmontar()) {}
         return 1;
     }
     Diretorio raiz = *raiz_opt;
@@ -104,8 +104,7 @@ int main() {
         }
         else if (comando == "mkdir") {
             if (argumento.empty()) { std::cout << "Uso: mkdir <nome>\n"; continue; }
-            auto nova_pasta = raiz.criar_diretorio(argumento);
-            if (nova_pasta) std::cout << "Diretorio '" << argumento << "' criado com sucesso.\n";
+            if (auto nova_pasta = raiz.criar_diretorio(argumento)) std::cout << "Diretorio '" << argumento << "' criado com sucesso.\n";
             else std::cout << "Erro ao criar diretorio.\n";
         }
         else if (comando == "touch") {
@@ -145,7 +144,7 @@ int main() {
     }
 
     std::cout << "\n[Hardware] Desmontando sistema e efetuando dump (flush) da RAM...\n";
-    disco.desmontar();
+    if (!disco.desmontar()) {}
     std::cout << "Sessão encerrada com segurança.\n";
     return 0;
 }
