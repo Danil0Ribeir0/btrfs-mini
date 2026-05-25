@@ -16,9 +16,9 @@ void exibir_diretorio(Diretorio& dir) {
         std::cout << "  (Pasta vazia)\n";
         return;
     }
-    for (const auto& item : *itens) {
-        std::cout << "  " << (item.eh_diretorio ? "[DIR] " : "[FIL] ")
-                  << item.nome << " (ID: " << item.id_inode << ")\n";
+    for (const auto&[nome, id_inode, eh_diretorio] : *itens) {
+        std::cout << "  " << (eh_diretorio ? "[DIR] " : "[FIL] ")
+                  << nome << " (ID: " << id_inode << ")\n";
     }
 }
 
@@ -44,7 +44,7 @@ int main() {
     std::getline(std::cin, escolha);
 
     if (!disco.montar(ARQUIVO_DISCO)) {
-        std::cerr << "Falha ao alocar memória RAM para o disco.\n";
+        std::cerr << "Erro ao montar o disco virtual (Falha de I/O ou arquivo bloqueado).\n";
         return 1;
     }
 
@@ -52,14 +52,26 @@ int main() {
 
     if (escolha == "1") {
         std::cout << "[FS] Formatando disco via Copy-on-Write...\n";
-        if (!fs.formatar()) { std::cerr << "Erro fatal na formatação.\n"; return 1; }
+        if (!fs.formatar()) {
+            std::cerr << "Erro durante formatação do filesystem.\n";
+            disco.desmontar();
+            return 1;
+        }
     } else {
         std::cout << "[FS] Montando sistema de arquivos...\n";
-        if (!fs.montar()) { std::cerr << "Erro fatal ao montar. O disco pode estar vazio.\n"; return 1; }
+        if (!fs.montar()) {
+            std::cerr << "Disco existe mas não é um BTRFS válido (ou está corrompido).\n";
+            disco.desmontar();
+            return 1;
+        }
     }
 
     auto raiz_opt = fs.obter_raiz();
-    if (!raiz_opt) { std::cerr << "Falha ao obter pasta raiz.\n"; return 1; }
+    if (!raiz_opt) {
+        std::cerr << "Falha ao obter a pasta raiz do sistema.\n";
+        disco.desmontar();
+        return 1;
+    }
     Diretorio raiz = *raiz_opt;
 
     std::cout << "\nBem-vindo ao shell BTRFS! Digite 'help' para comandos.\n";
