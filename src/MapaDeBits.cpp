@@ -50,6 +50,9 @@ std::optional<std::size_t> MapaDeBits::alocar_bloco_livre() {
     for (std::size_t i = 0; i < total_blocos_rastreados; ++i) {
         if (!checar_bit(i)) {
             marcar_bit(i, true);
+
+            if (!sincronizar()) {}
+
             return i;
         }
     }
@@ -58,4 +61,6 @@ std::optional<std::size_t> MapaDeBits::alocar_bloco_livre() {
 
 void MapaDeBits::liberar_bloco(std::size_t indice_bloco) {
     marcar_bit(indice_bloco, false);
+
+    if (!sincronizar()) {}
 }
