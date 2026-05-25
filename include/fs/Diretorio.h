@@ -20,6 +20,7 @@ public:
     Diretorio(GerenciadorArvoreB& arvore_ref, uint64_t id);
 
     std::expected<Arquivo, ErroDisco> criar_arquivo(const std::string& nome);
+    std::expected<Arquivo, ErroDisco> abrir_arquivo(const std::string& nome);
     std::expected<Diretorio, ErroDisco> criar_diretorio(const std::string& nome);
     
     std::expected<std::vector<InfoEntrada>, ErroDisco> listar();

@@ -82,3 +82,15 @@ std::expected<std::vector<InfoEntrada>, ErroDisco> Diretorio::listar() {
     }
     return resultado;
 }
+
+std::expected<Arquivo, ErroDisco> Diretorio::abrir_arquivo(const std::string& nome) {
+    auto res_itens = listar();
+    if (!res_itens) return std::unexpected(res_itens.error());
+
+    for (const auto& item : *res_itens) {
+        if (!item.eh_diretorio && item.nome == nome) {
+            return Arquivo(arvore, item.id_inode);
+        }
+    }
+    return std::unexpected(ErroDisco::ForaDosLimites);
+}

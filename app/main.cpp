@@ -2,114 +2,138 @@
 #include "fs/SistemaDeArquivos.h"
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <span>
 #include <vector>
 
-void exibir_diretorio(Diretorio& dir, const std::string& caminho_pasta) {
-    std::cout << "\n[LS] Listando a pasta: " << caminho_pasta << "\n";
-    auto itens = dir.listar();
-    if (!itens) {
-        std::cerr << "Erro ao listar diretorio.\n";
-        return;
-    }
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
-    if (itens->empty()) {
+void exibir_diretorio(Diretorio& dir) {
+    auto itens = dir.listar();
+    if (!itens || itens->empty()) {
         std::cout << "  (Pasta vazia)\n";
         return;
     }
-
     for (const auto& item : *itens) {
         std::cout << "  " << (item.eh_diretorio ? "[DIR] " : "[FIL] ")
-                  << item.nome << " (ID Inode: " << item.id_inode << ")\n";
+                  << item.nome << " (ID: " << item.id_inode << ")\n";
     }
 }
 
 int main() {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
     std::cout << "==================================================\n";
-    std::cout << "         MINI-BTRFS: SISTEMA DE ARQUIVOS          \n";
+    std::cout << "          MINI-BTRFS SHELL INTERATIVO             \n";
     std::cout << "==================================================\n";
 
     const std::size_t TOTAL_BLOCOS = 64;
     const std::string ARQUIVO_DISCO = "btrfs_disco.bin";
-
-    std::cout << "[Hardware] Inicializando disco em RAM com " << TOTAL_BLOCOS << " blocos...\n";
     DiscoVirtualEmMemoria disco(TOTAL_BLOCOS);
 
-    std::cout << "[Hardware] Montando arquivo físico de backup: " << ARQUIVO_DISCO << "\n";
-    if (auto res = disco.montar(ARQUIVO_DISCO); !res) {
-        std::cerr << "Falha crítica ao montar o disco virtual.\n";
+    std::cout << "Selecione o modo de inicialização:\n";
+    std::cout << "1. Formatar um NOVO disco (Apaga tudo)\n";
+    std::cout << "2. Montar disco EXISTENTE (Carrega de btrfs_disco.bin)\n";
+    std::cout << "Escolha (1/2): ";
+
+    std::string escolha;
+    std::getline(std::cin, escolha);
+
+    if (!disco.montar(ARQUIVO_DISCO)) {
+        std::cerr << "Falha ao alocar memória RAM para o disco.\n";
         return 1;
     }
 
     SistemaDeArquivos fs(disco);
 
-    std::cout << "[FS] Formatando o disco virtual com o layout BTRFS (Nível Único + CoW)...\n";
-    if (auto res = fs.formatar(); !res) {
-        std::cerr << "Falha ao formatar o sistema de arquivos.\n";
-        disco.desmontar();
-        return 1;
+    if (escolha == "1") {
+        std::cout << "[FS] Formatando disco via Copy-on-Write...\n";
+        if (!fs.formatar()) { std::cerr << "Erro fatal na formatação.\n"; return 1; }
+    } else {
+        std::cout << "[FS] Montando sistema de arquivos...\n";
+        if (!fs.montar()) { std::cerr << "Erro fatal ao montar. O disco pode estar vazio.\n"; return 1; }
     }
 
-    std::cout << "[FS] Obtendo acesso ao diretório raiz '/'...\n";
     auto raiz_opt = fs.obter_raiz();
-    if (!raiz_opt) {
-        std::cerr << "Não foi possível ler a raiz.\n";
-        disco.desmontar();
-        return 1;
-    }
+    if (!raiz_opt) { std::cerr << "Falha ao obter pasta raiz.\n"; return 1; }
     Diretorio raiz = *raiz_opt;
 
-    exibir_diretorio(raiz, "/");
+    std::cout << "\nBem-vindo ao shell BTRFS! Digite 'help' para comandos.\n";
 
-    std::cout << "\n[Operação] Criando a pasta '/documentos'...\n";
-    auto pasta_docs_opt = raiz.criar_diretorio("documentos");
-    auto pasta_docs = raiz.criar_diretorio("documentos");
-    if (!pasta_docs) {
-        std::cerr << "Erro ao criar diretório.\n";
-        disco.desmontar();
-        return 1;
+    // O Loop Principal de Interação
+    while (true) {
+        std::cout << "\nbtrfs:/> ";
+        std::string linha;
+        if (!std::getline(std::cin, linha)) break;
+
+        if (linha.empty()) continue;
+
+        std::istringstream iss(linha);
+        std::string comando, argumento;
+        iss >> comando >> argumento;
+
+        if (comando == "exit" || comando == "sair") {
+            break;
+        }
+        else if (comando == "help") {
+            std::cout << "Comandos disponiveis:\n"
+                      << "  ls           - Lista os arquivos na raiz\n"
+                      << "  mkdir <nome> - Cria uma subpasta\n"
+                      << "  touch <nome> - Cria um arquivo e permite escrever nele\n"
+                      << "  cat <nome>   - Le e exibe o conteudo de um arquivo\n"
+                      << "  exit         - Salva o disco e encerra\n";
+        }
+        else if (comando == "ls") {
+            exibir_diretorio(raiz);
+        }
+        else if (comando == "mkdir") {
+            if (argumento.empty()) { std::cout << "Uso: mkdir <nome>\n"; continue; }
+            auto nova_pasta = raiz.criar_diretorio(argumento);
+            if (nova_pasta) std::cout << "Diretorio '" << argumento << "' criado com sucesso.\n";
+            else std::cout << "Erro ao criar diretorio.\n";
+        }
+        else if (comando == "touch") {
+            if (argumento.empty()) { std::cout << "Uso: touch <nome>\n"; continue; }
+            auto novo_arquivo = raiz.criar_arquivo(argumento);
+            if (!novo_arquivo) { std::cout << "Erro ao criar arquivo.\n"; continue; }
+
+            std::cout << "Arquivo criado! Digite o texto que deseja salvar nele:\n> ";
+            std::string conteudo;
+            std::getline(std::cin, conteudo);
+
+            auto span_dados = std::as_bytes(std::span(conteudo.data(), conteudo.size()));
+            if (novo_arquivo->escrever(span_dados)) {
+                std::cout << "[BTRFS] Dados gravados em Inline Extents usando CoW!\n";
+            } else {
+                std::cout << "Erro ao gravar dados no disco.\n";
+            }
+        }
+        else if (comando == "cat") {
+            if (argumento.empty()) { std::cout << "Uso: cat <nome>\n"; continue; }
+            auto arquivo = raiz.abrir_arquivo(argumento);
+            if (!arquivo) { std::cout << "Arquivo '" << argumento << "' nao encontrado!\n"; continue; }
+
+            auto bytes = arquivo->ler();
+            if (bytes) {
+                std::string texto(reinterpret_cast<const char*>(bytes->data()), bytes->size());
+                std::cout << "--------------------------------\n";
+                std::cout << texto << "\n";
+                std::cout << "--------------------------------\n";
+            } else {
+                std::cout << "Erro ao ler o arquivo.\n";
+            }
+        }
+        else {
+            std::cout << "Comando desconhecido: " << comando << ". Digite 'help'.\n";
+        }
     }
 
-    std::cout << "[Operação] Criando o arquivo 'relatorio.txt' dentro de '/documentos'...\n";
-    auto arquivo_relatorio = pasta_docs->criar_arquivo("relatorio.txt");
-    if (!arquivo_relatorio) {
-        std::cerr << "Erro ao criar arquivo.\n";
-        disco.desmontar();
-        return 1;
-    }
-
-    std::string mensagem_usuario = "Ola Banca! Este arquivo foi fatiado em Inline Chunks e salvo via Copy-on-Write (CoW).";
-    std::cout << "[I/O Escrita] Gravando dados no arquivo (Tamanho: " << mensagem_usuario.size() << " bytes)...\n";
-
-    auto span_dados = std::as_bytes(std::span(mensagem_usuario.data(), mensagem_usuario.size()));
-    if (auto res = arquivo_relatorio->escrever(span_dados); !res) {
-        std::cerr << "Erro ao escrever dados no arquivo.\n";
-        disco.desmontar();
-        return 1;
-    }
-    std::cout << "[BTRFS] Sucesso! O motor clonou o nó raiz antigo e gravou a nova transação com segurança.\n";
-
-    exibir_diretorio(raiz, "/");
-    exibir_diretorio(*pasta_docs, "/documentos");
-
-    std::cout << "\n[I/O Leitura] Lendo o conteúdo de 'relatorio.txt' direto do disco virtual...\n";
-    auto bytes_lidos = arquivo_relatorio->ler();
-    if (!bytes_lidos) {
-        std::cerr << "Erro ao ler os dados do arquivo.\n";
-        disco.desmontar();
-        return 1;
-    }
-
-    std::string conteudo_final(reinterpret_cast<const char*>(bytes_lidos->data()), bytes_lidos->size());
-    std::cout << "--------------------------------------------------\n";
-    std::cout << "CONTEÚDO LIDO: \"" << conteudo_final << "\"\n";
-    std::cout << "--------------------------------------------------\n";
-
-    std::cout << "\n[Hardware] Desmontando o sistema e salvando dados em '" << ARQUIVO_DISCO << "'...\n";
+    std::cout << "\n[Hardware] Desmontando sistema e efetuando dump (flush) da RAM...\n";
     disco.desmontar();
-
-    std::cout << "==================================================\n";
-    std::cout << "      DEMONSTRAÇÃO CONCLUÍDA COM SUCESSO!        \n";
-    std::cout << "==================================================\n";
+    std::cout << "Sessão encerrada com segurança.\n";
     return 0;
 }
