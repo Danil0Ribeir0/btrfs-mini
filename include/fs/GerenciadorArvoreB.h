@@ -35,6 +35,23 @@ public:
     }
 
     template <typename TPayload, std::size_t MaxItens>
+    std::expected<std::vector<TPayload>, ErroDisco> listar_itens_tipado(uint64_t id_objeto, BtrfsTipoItem tipo) {
+        std::array<std::byte, TAMANHO_BLOCO> buffer;
+        auto res = disco.ler_bloco(bloco_raiz_atual, buffer);
+        if (!res) return std::unexpected(res.error());
+
+        auto* bloco = reinterpret_cast<BlocoArvoreB<TPayload, MaxItens>*>(buffer.data());
+        std::vector<TPayload> resultados;
+
+        for (uint16_t i = 0; i < bloco->cabecalho.qtd_itens; ++i) {
+            if (bloco->itens[i].chave.id_objeto == id_objeto && bloco->itens[i].chave.tipo == tipo) {
+                resultados.push_back(bloco->itens[i].dados);
+            }
+        }
+        return resultados;
+    }
+
+    template <typename TPayload, std::size_t MaxItens>
     std::expected<void, ErroDisco> inserir_item_tipado(const ChaveBtrfs& chave, const TPayload& payload) {
         auto res_cow = clonar_bloco_cow(bloco_raiz_atual);
         if (!res_cow) return std::unexpected(res_cow.error());
