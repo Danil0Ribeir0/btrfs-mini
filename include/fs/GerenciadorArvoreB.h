@@ -67,7 +67,8 @@ public:
         this->bloco_raiz_atual = novo_bloco;
 
         std::array<std::byte, TAMANHO_BLOCO> buffer{};
-        disco.ler_bloco(novo_bloco, buffer);
+        if (auto res_leitura = disco.ler_bloco(novo_bloco, buffer); !res_leitura)
+            return std::unexpected(res_leitura.error());
         auto* bloco = reinterpret_cast<BlocoArvoreB*>(buffer.data());
 
         for (uint16_t i = 0; i < bloco->cabecalho.qtd_itens; ++i) {
