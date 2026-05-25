@@ -22,7 +22,7 @@ std::expected<void, ErroDisco> SistemaDeArquivos::formatar() {
 
     mapa = std::make_unique<MapaDeBits>(disco, inicio_mapa, blocos_mapa, total_blocos);
     for (std::size_t i = 0; i <= bloco_raiz_arvore; ++i) {
-        mapa->alocar_bloco_livre();
+        (void)mapa->alocar_bloco_livre();
     }
 
     arvore = std::make_unique<GerenciadorArvoreB>(disco, *mapa, bloco_raiz_arvore, 1);

@@ -3,26 +3,21 @@
 #include <array>
 #include <cstdint>
 
-template <typename TPayload>
+constexpr std::size_t TAMANHO_PAYLOAD_MAX = 264;
+constexpr std::size_t MAX_ITENS_BLOCO = 13;
+
 struct ItemBtrfs {
     ChaveBtrfs chave;
     uint32_t tamanho_payload;
-    TPayload dados;
+    std::array<std::byte, TAMANHO_PAYLOAD_MAX> dados;
 };
 
-template <typename TPayload, std::size_t MaxItens>
 struct BlocoArvoreB {
     CabecalhoNoBtrfs cabecalho;
-    std::array<ItemBtrfs<TPayload>, MaxItens> itens; 
-    
+    std::array<ItemBtrfs, MAX_ITENS_BLOCO> itens;
+
     BlocoArvoreB() {
         cabecalho = CabecalhoNoBtrfs{};
-        itens.fill(ItemBtrfs<TPayload>{});
-    }
-
-    static constexpr std::size_t tamanho_total() {
-        return sizeof(CabecalhoNoBtrfs) + (sizeof(ItemBtrfs<TPayload>) * MaxItens);
+        itens.fill(ItemBtrfs{});
     }
 };
-
-static_assert(TAMANHO_BLOCO == 4096, "Erro critico: O motor BTRFS requer blocos estritos de 4KB.");

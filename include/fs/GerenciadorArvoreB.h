@@ -5,6 +5,7 @@
 #include <expected>
 #include <vector>
 #include <span>
+#include <cstring>
 
 class GerenciadorArvoreB {
 private:
@@ -18,41 +19,47 @@ public:
 
     std::expected<uint64_t, ErroDisco> clonar_bloco_cow(uint64_t bloco_origem);
 
-    template <typename TPayload, std::size_t MaxItens>
+    template <typename TPayload>
     std::expected<TPayload, ErroDisco> buscar_item_tipado(const ChaveBtrfs& chave_busca) {
         std::array<std::byte, TAMANHO_BLOCO> buffer;
         auto res = disco.ler_bloco(bloco_raiz_atual, buffer);
         if (!res) return std::unexpected(res.error());
 
-        auto* bloco = reinterpret_cast<BlocoArvoreB<TPayload, MaxItens>*>(buffer.data());
+        auto* bloco = reinterpret_cast<BlocoArvoreB*>(buffer.data());
 
         for (uint16_t i = 0; i < bloco->cabecalho.qtd_itens; ++i) {
             if (bloco->itens[i].chave == chave_busca) {
-                return bloco->itens[i].dados;
+                TPayload payload_recuperado;
+                std::memcpy(&payload_recuperado, bloco->itens[i].dados.data(), sizeof(TPayload));
+                return payload_recuperado;
             }
         }
         return std::unexpected(ErroDisco::ForaDosLimites);
     }
 
-    template <typename TPayload, std::size_t MaxItens>
+    template <typename TPayload>
     std::expected<std::vector<TPayload>, ErroDisco> listar_itens_tipado(uint64_t id_objeto, BtrfsTipoItem tipo) {
         std::array<std::byte, TAMANHO_BLOCO> buffer;
         auto res = disco.ler_bloco(bloco_raiz_atual, buffer);
         if (!res) return std::unexpected(res.error());
 
-        auto* bloco = reinterpret_cast<BlocoArvoreB<TPayload, MaxItens>*>(buffer.data());
+        auto* bloco = reinterpret_cast<BlocoArvoreB*>(buffer.data());
         std::vector<TPayload> resultados;
 
         for (uint16_t i = 0; i < bloco->cabecalho.qtd_itens; ++i) {
             if (bloco->itens[i].chave.id_objeto == id_objeto && bloco->itens[i].chave.tipo == tipo) {
-                resultados.push_back(bloco->itens[i].dados);
+                TPayload payload_recuperado;
+                std::memcpy(&payload_recuperado, bloco->itens[i].dados.data(), sizeof(TPayload));
+                resultados.push_back(payload_recuperado);
             }
         }
         return resultados;
     }
 
-    template <typename TPayload, std::size_t MaxItens>
+    template <typename TPayload>
     std::expected<void, ErroDisco> inserir_item_tipado(const ChaveBtrfs& chave, const TPayload& payload) {
+        static_assert(sizeof(TPayload) <= TAMANHO_PAYLOAD_MAX, "Erro: Payload muito grande para o Slot!");
+
         auto res_cow = clonar_bloco_cow(bloco_raiz_atual);
         if (!res_cow) return std::unexpected(res_cow.error());
 
@@ -61,23 +68,24 @@ public:
 
         std::array<std::byte, TAMANHO_BLOCO> buffer;
         disco.ler_bloco(novo_bloco, buffer);
-        auto* bloco = reinterpret_cast<BlocoArvoreB<TPayload, MaxItens>*>(buffer.data());
+        auto* bloco = reinterpret_cast<BlocoArvoreB*>(buffer.data());
 
         for (uint16_t i = 0; i < bloco->cabecalho.qtd_itens; ++i) {
             if (bloco->itens[i].chave == chave) {
-                bloco->itens[i].dados = payload;
+                std::memcpy(bloco->itens[i].dados.data(), &payload, sizeof(TPayload));
+                bloco->itens[i].tamanho_payload = sizeof(TPayload);
                 return disco.escrever_bloco(novo_bloco, buffer);
             }
         }
 
-        if (bloco->cabecalho.qtd_itens >= MaxItens) {
+        if (bloco->cabecalho.qtd_itens >= MAX_ITENS_BLOCO) {
             return std::unexpected(ErroDisco::ForaDosLimites);
         }
 
         uint16_t indice = bloco->cabecalho.qtd_itens;
         bloco->itens[indice].chave = chave;
         bloco->itens[indice].tamanho_payload = sizeof(TPayload);
-        bloco->itens[indice].dados = payload;
+        std::memcpy(bloco->itens[indice].dados.data(), &payload, sizeof(TPayload));
         bloco->cabecalho.qtd_itens++;
 
         return disco.escrever_bloco(novo_bloco, buffer);

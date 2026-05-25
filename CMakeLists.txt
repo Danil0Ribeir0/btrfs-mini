@@ -27,4 +27,5 @@ add_executable(BTRFS app/main.cpp
         src/SistemaDeArquivos.cpp
         src/Diretorio.cpp
         src/Arquivo.cpp
+        src/MapaDeBits.cpp
 )

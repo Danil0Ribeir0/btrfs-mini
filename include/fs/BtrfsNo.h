@@ -1,9 +1,8 @@
 #pragma once
 #include "fs/BtrfsKey.h"
+#include "fs/DiscoVirtual.h"
 #include <cstdint>
 #include <array>
-
-constexpr std::size_t TAMANHO_BLOCO = 4096;
 
 struct CabecalhoNoBtrfs {
     uint64_t id_bloco_fisico;

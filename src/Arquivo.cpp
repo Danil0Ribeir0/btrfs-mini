@@ -2,7 +2,7 @@
 #include "fs/Inode.h"
 #include <algorithm>
 
-constexpr std::size_t TAMANHO_CHUNK = 1024;
+constexpr std::size_t TAMANHO_CHUNK = 256;
 
 struct ChunkDados {
     std::array<std::byte, TAMANHO_CHUNK> bytes;
@@ -17,14 +17,14 @@ std::expected<void, ErroDisco> Arquivo::escrever(std::span<const std::byte> dado
 
     while (offset_leitura < dados.size()) {
         std::size_t tamanho_copia = std::min<std::size_t>(dados.size() - offset_leitura, TAMANHO_CHUNK);
-        
+
         ChunkDados chunk{};
         chunk.tamanho_util = tamanho_copia;
         std::copy_n(dados.begin() + offset_leitura, tamanho_copia, chunk.bytes.begin());
 
         ChaveBtrfs chave_chunk{id_inode, BtrfsTipoItem::ExtentDados, offset_chave};
-        
-        auto res = arvore.inserir_item_tipado<ChunkDados, 3>(chave_chunk, chunk);
+
+        auto res = arvore.inserir_item_tipado(chave_chunk, chunk);
         if (!res) return std::unexpected(res.error());
 
         offset_leitura += tamanho_copia;
@@ -32,19 +32,19 @@ std::expected<void, ErroDisco> Arquivo::escrever(std::span<const std::byte> dado
     }
 
     ChaveBtrfs chave_inode{id_inode, BtrfsTipoItem::InodeItem, 0};
-    auto res_inode = arvore.buscar_item_tipado<Inode, 32>(chave_inode);
-    
+    auto res_inode = arvore.buscar_item_tipado<Inode>(chave_inode);
+
     if (res_inode) {
         Inode inode_atual = *res_inode;
         inode_atual.tamanho_bytes = dados.size();
-        arvore.inserir_item_tipado<Inode, 32>(chave_inode, inode_atual);
+        arvore.inserir_item_tipado(chave_inode, inode_atual);
     }
 
     return {};
 }
 
 std::expected<std::vector<std::byte>, ErroDisco> Arquivo::ler() {
-    auto res_chunks = arvore.listar_itens_tipado<ChunkDados, 3>(id_inode, BtrfsTipoItem::ExtentDados);
+    auto res_chunks = arvore.listar_itens_tipado<ChunkDados>(id_inode, BtrfsTipoItem::ExtentDados);
     if (!res_chunks) return std::unexpected(res_chunks.error());
 
     std::vector<std::byte> resultado;
