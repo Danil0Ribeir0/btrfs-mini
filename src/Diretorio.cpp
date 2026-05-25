@@ -14,7 +14,6 @@ Diretorio::Diretorio(GerenciadorArvoreB& arvore_ref, uint64_t id) : arvore(arvor
 std::expected<uint64_t, ErroDisco> Diretorio::criar_entrada_interna(const std::string& nome, TipoInode tipo, bool eh_diretorio) const {
     uint64_t novo_id = gerador_id();
 
-    // 1. Cria o Inode genérico
     Inode inode_novo{};
     inode_novo.tipo = tipo;
     inode_novo.permissoes = 255;
