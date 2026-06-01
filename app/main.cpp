@@ -105,15 +105,26 @@ int main() {
         }
         else if (comando == "help") {
             std::cout << "Comandos disponiveis:\n"
-                      << "  ls           - Lista os arquivos na raiz\n"
-                      << "  mkdir <nome> - Cria uma subpasta\n"
-                      << "  touch <nome> - Cria um arquivo e permite escrever nele\n"
-                      << "  cat <nome>   - Le e exibe o conteudo de um arquivo\n"
-                      << "  sync         - Sincroniza dados para o disco\n"
-                      << "  exit         - Salva o disco e encerra\n";
+                      << "  ls [caminho]     - Lista arquivos (ex: ls pasta)\n"
+                      << "  mkdir <nome>     - Cria uma subpasta\n"
+                      << "  touch <caminho>  - Cria arquivo (ex: touch pasta/arquivo.txt)\n"
+                      << "  cat <caminho>    - Le arquivo (ex: cat pasta/arquivo.txt)\n"
+                      << "  sync             - Sincroniza dados para o disco\n"
+                      << "  exit             - Salva o disco e encerra\n";
         }
         else if (comando == "ls") {
-            exibir_diretorio(raiz);
+            std::string caminho_ls = argumento.empty() ? "" : argumento;
+            
+            if (caminho_ls.empty()) {
+                exibir_diretorio(raiz);
+            } else {
+                auto res_nav = raiz.navegar_para(caminho_ls);
+                if (!res_nav) {
+                    std::cout << "Caminho nao encontrado: " << caminho_ls << "\n";
+                    continue;
+                }
+                exibir_diretorio(*res_nav);
+            }
         }
         else if (comando == "mkdir") {
             if (argumento.empty()) { std::cout << "Uso: mkdir <nome>\n"; continue; }
@@ -121,8 +132,8 @@ int main() {
             else std::cout << "Erro ao criar diretorio.\n";
         }
         else if (comando == "touch") {
-            if (argumento.empty()) { std::cout << "Uso: touch <nome>\n"; continue; }
-            auto novo_arquivo = raiz.criar_arquivo(argumento);
+            if (argumento.empty()) { std::cout << "Uso: touch <caminho>\n"; continue; }
+            auto novo_arquivo = raiz.criar_arquivo_em_caminho(argumento);
             if (!novo_arquivo) { std::cout << "Erro ao criar arquivo.\n"; continue; }
 
             std::cout << "Arquivo criado! Digite o texto que deseja salvar nele:\n> ";
@@ -137,8 +148,8 @@ int main() {
             }
         }
         else if (comando == "cat") {
-            if (argumento.empty()) { std::cout << "Uso: cat <nome>\n"; continue; }
-            auto arquivo = raiz.abrir_arquivo(argumento);
+            if (argumento.empty()) { std::cout << "Uso: cat <caminho>\n"; continue; }
+            auto arquivo = raiz.abrir_arquivo_em_caminho(argumento);
             if (!arquivo) { std::cout << "Arquivo '" << argumento << "' nao encontrado!\n"; continue; }
 
             auto bytes = arquivo->ler();
@@ -153,14 +164,10 @@ int main() {
         }
         else if (comando == "sync") {
             std::cout << "[BTRFS] Sincronizando dados para o disco...\n";
-            if (!disco.desmontar()) {
+            if (!fs.sincronizar()) {
                 std::cout << "Erro ao sincronizar!\n";
             } else {
                 std::cout << "[BTRFS] Sincronização concluída com sucesso!\n";
-                if (!disco.montar(ARQUIVO_DISCO)) {
-                    std::cerr << "Erro ao remontarar disco após sincronização.\n";
-                    return 1;
-                }
             }
         }
         else {
@@ -168,7 +175,10 @@ int main() {
         }
     }
 
-    std::cout << "\n[Hardware] Desmontando sistema e efetuando dump (flush) da RAM...\n";
+    std::cout << "\n[Hardware] Sincronizando filesystem e desmontando...\n";
+    if (!fs.sincronizar()) {
+        std::cerr << "Aviso: Erro ao sincronizar filesystem.\n";
+    }
     if (!disco.desmontar()) {
         std::cerr << "Aviso: Erro ao desmontar disco.\n";
     }

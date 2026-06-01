@@ -29,6 +29,11 @@ public:
     std::expected<Diretorio, ErroDisco> criar_diretorio(const std::string& nome);
     std::expected<Arquivo, ErroDisco> abrir_arquivo(const std::string& nome);
     std::expected<std::vector<InfoEntrada>, ErroDisco> listar();
+    
+    // Métodos para navegação por caminho
+    std::expected<Diretorio, ErroDisco> navegar_para(const std::string& caminho);
+    std::expected<Arquivo, ErroDisco> criar_arquivo_em_caminho(const std::string& caminho);
+    std::expected<Arquivo, ErroDisco> abrir_arquivo_em_caminho(const std::string& caminho);
 
     [[nodiscard]] uint64_t obter_id() const { return id_inode; }
 };

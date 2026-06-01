@@ -67,6 +67,25 @@ std::expected<void, ErroDisco> SistemaDeArquivos::montar() {
     return {};
 }
 
+std::expected<void, ErroDisco> SistemaDeArquivos::sincronizar() {
+    if (!arvore || !mapa) return std::unexpected(ErroDisco::NaoMontado);
+
+    // Atualizar o superbloco com a raiz atual da árvore
+    std::array<std::byte, TAMANHO_BLOCO> buffer{};
+    auto res_leitura = disco.ler_bloco(0, buffer);
+    if (!res_leitura) return std::unexpected(res_leitura.error());
+
+    auto* sb = reinterpret_cast<Superbloco*>(buffer.data());
+    sb->raiz_arvore_fs = arvore->obter_raiz_atual();
+    sb->geracao_atual = arvore->obter_geracao_atual();
+
+    auto res_escrita = disco.escrever_bloco(0, buffer);
+    if (!res_escrita) return std::unexpected(res_escrita.error());
+
+    // Sincronizar o mapa de bits
+    return mapa->sincronizar();
+}
+
 std::expected<Diretorio, ErroDisco> SistemaDeArquivos::obter_raiz() {
     if (!arvore) return std::unexpected(ErroDisco::NaoMontado);
 

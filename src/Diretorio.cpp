@@ -77,3 +77,74 @@ std::expected<Arquivo, ErroDisco> Diretorio::abrir_arquivo(const std::string& no
     }
     return std::unexpected(ErroDisco::ForaDosLimites);
 }
+
+std::expected<Diretorio, ErroDisco> Diretorio::navegar_para(const std::string& caminho) {
+    if (caminho.empty()) return *this;
+
+    size_t pos = 0;
+    uint64_t id_atual = this->id_inode;
+
+    while (pos < caminho.size()) {
+        size_t proxima_barra = caminho.find_first_of("/\\", pos);
+        if (proxima_barra == std::string::npos) {
+            proxima_barra = caminho.size();
+        }
+
+        std::string componente = caminho.substr(pos, proxima_barra - pos);
+        if (!componente.empty() && componente != ".") {
+            auto res_itens = arvore.listar_itens_tipado<RegistroDiretorio>(id_atual, BtrfsTipoItem::ItemDiretorio);
+            if (!res_itens) return std::unexpected(res_itens.error());
+
+            bool encontrado = false;
+            for (const auto& reg : *res_itens) {
+                if (reg.eh_diretorio && std::string(reg.nome) == componente) {
+                    id_atual = reg.id_inode;
+                    encontrado = true;
+                    break;
+                }
+            }
+
+            if (!encontrado) {
+                return std::unexpected(ErroDisco::ForaDosLimites);
+            }
+        }
+
+        pos = proxima_barra + 1;
+    }
+
+    return Diretorio(arvore, id_atual, gerador_id);
+}
+
+std::expected<Arquivo, ErroDisco> Diretorio::criar_arquivo_em_caminho(const std::string& caminho) {
+    size_t ultima_barra = caminho.find_last_of("/\\");
+    
+    if (ultima_barra == std::string::npos) {
+        // Sem caminho, cria na raiz
+        return criar_arquivo(caminho);
+    }
+
+    std::string caminho_dir = caminho.substr(0, ultima_barra);
+    std::string nome_arquivo = caminho.substr(ultima_barra + 1);
+
+    auto res_dir = navegar_para(caminho_dir);
+    if (!res_dir) return std::unexpected(res_dir.error());
+
+    return res_dir->criar_arquivo(nome_arquivo);
+}
+
+std::expected<Arquivo, ErroDisco> Diretorio::abrir_arquivo_em_caminho(const std::string& caminho) {
+    size_t ultima_barra = caminho.find_last_of("/\\");
+    
+    if (ultima_barra == std::string::npos) {
+        // Sem caminho, abre na raiz
+        return abrir_arquivo(caminho);
+    }
+
+    std::string caminho_dir = caminho.substr(0, ultima_barra);
+    std::string nome_arquivo = caminho.substr(ultima_barra + 1);
+
+    auto res_dir = navegar_para(caminho_dir);
+    if (!res_dir) return std::unexpected(res_dir.error());
+
+    return res_dir->abrir_arquivo(nome_arquivo);
+}

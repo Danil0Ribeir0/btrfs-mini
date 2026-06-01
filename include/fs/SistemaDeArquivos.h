@@ -23,5 +23,7 @@ public:
     
     std::expected<void, ErroDisco> montar();
     
+    std::expected<void, ErroDisco> sincronizar();
+    
     std::expected<Diretorio, ErroDisco> obter_raiz();
 };
