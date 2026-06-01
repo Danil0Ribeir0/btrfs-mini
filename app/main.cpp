@@ -5,6 +5,7 @@
 #include <sstream>
 #include <span>
 #include <vector>
+#include <filesystem>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -42,6 +43,17 @@ int main() {
 
     std::string escolha;
     std::getline(std::cin, escolha);
+
+    if (escolha == "1") {
+        if (std::filesystem::exists(ARQUIVO_DISCO)) {
+            try {
+                std::filesystem::remove(ARQUIVO_DISCO);
+                std::cout << "[INFO] Arquivo de disco antigo removido.\n";
+            } catch (const std::exception& e) {
+                std::cerr << "Aviso: Não foi possível remover disco antigo: " << e.what() << "\n";
+            }
+        }
+    }
 
     if (!disco.montar(ARQUIVO_DISCO)) {
         std::cerr << "Erro ao montar o disco virtual (Falha de I/O ou arquivo bloqueado).\n";
@@ -97,6 +109,7 @@ int main() {
                       << "  mkdir <nome> - Cria uma subpasta\n"
                       << "  touch <nome> - Cria um arquivo e permite escrever nele\n"
                       << "  cat <nome>   - Le e exibe o conteudo de um arquivo\n"
+                      << "  sync         - Sincroniza dados para o disco\n"
                       << "  exit         - Salva o disco e encerra\n";
         }
         else if (comando == "ls") {
@@ -138,13 +151,27 @@ int main() {
                 std::cout << "Erro ao ler o arquivo.\n";
             }
         }
+        else if (comando == "sync") {
+            std::cout << "[BTRFS] Sincronizando dados para o disco...\n";
+            if (!disco.desmontar()) {
+                std::cout << "Erro ao sincronizar!\n";
+            } else {
+                std::cout << "[BTRFS] Sincronização concluída com sucesso!\n";
+                if (!disco.montar(ARQUIVO_DISCO)) {
+                    std::cerr << "Erro ao remontarar disco após sincronização.\n";
+                    return 1;
+                }
+            }
+        }
         else {
             std::cout << "Comando desconhecido: " << comando << ". Digite 'help'.\n";
         }
     }
 
     std::cout << "\n[Hardware] Desmontando sistema e efetuando dump (flush) da RAM...\n";
-    if (!disco.desmontar()) {}
+    if (!disco.desmontar()) {
+        std::cerr << "Aviso: Erro ao desmontar disco.\n";
+    }
     std::cout << "Sessão encerrada com segurança.\n";
     return 0;
 }

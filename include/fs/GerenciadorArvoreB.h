@@ -110,6 +110,31 @@ public:
 
         return disco.escrever_bloco(novo_bloco, buffer);
     }
+
+    std::expected<void, ErroDisco> deletar_item(const ChaveBtrfs& chave) {
+        auto res_cow = clonar_bloco_cow(bloco_raiz_atual);
+        if (!res_cow) return std::unexpected(res_cow.error());
+
+        uint64_t novo_bloco = *res_cow;
+        this->bloco_raiz_atual = novo_bloco;
+
+        std::array<std::byte, TAMANHO_BLOCO> buffer{};
+        if (auto res_leitura = disco.ler_bloco(novo_bloco, buffer); !res_leitura)
+            return std::unexpected(res_leitura.error());
+        auto* bloco = reinterpret_cast<BlocoArvoreB*>(buffer.data());
+
+        for (uint16_t i = 0; i < bloco->cabecalho.qtd_itens; ++i) {
+            if (bloco->itens[i].chave == chave) {
+                for (uint16_t j = i; j < bloco->cabecalho.qtd_itens - 1; ++j) {
+                    bloco->itens[j] = bloco->itens[j + 1];
+                }
+                bloco->cabecalho.qtd_itens--;
+                return disco.escrever_bloco(novo_bloco, buffer);
+            }
+        }
+
+        return std::unexpected(ErroDisco::ForaDosLimites);
+    }
     
     [[nodiscard]] uint64_t obter_raiz_atual() const;
     [[nodiscard]] uint64_t obter_geracao_atual() const;

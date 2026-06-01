@@ -12,7 +12,22 @@ struct ChunkDados {
 
 Arquivo::Arquivo(GerenciadorArvoreB& arvore_ref, uint64_t id) : arvore(arvore_ref), id_inode(id) {}
 
+std::expected<void, ErroDisco> Arquivo::limpar() {
+    auto res_chunks = arvore.listar_itens_com_chave<ChunkDados>(id_inode, BtrfsTipoItem::ExtentDados);
+    if (!res_chunks) return std::unexpected(res_chunks.error());
+
+    for (const auto&[chave, _] : *res_chunks) {
+        arvore.deletar_item(chave);
+    }
+
+    return {};
+}
+
 std::expected<void, ErroDisco> Arquivo::escrever(std::span<const std::byte> dados) {
+    if (auto res_limpar = limpar(); !res_limpar) {
+        return std::unexpected(res_limpar.error());
+    }
+
     std::size_t offset_leitura = 0;
     uint64_t offset_chave = 0;
 

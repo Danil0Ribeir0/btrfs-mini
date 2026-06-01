@@ -13,6 +13,7 @@ public:
     Arquivo(GerenciadorArvoreB& arvore_ref, uint64_t id);
 
     std::expected<void, ErroDisco> escrever(std::span<const std::byte> dados);
+    std::expected<void, ErroDisco> limpar();
     
     std::expected<std::vector<std::byte>, ErroDisco> ler();
 

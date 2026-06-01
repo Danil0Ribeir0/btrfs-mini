@@ -13,6 +13,9 @@ uint64_t SistemaDeArquivos::gerar_novo_id() {
 }
 
 std::expected<void, ErroDisco> SistemaDeArquivos::formatar() {
+    auto res_limpar = disco.limpar();
+    if (!res_limpar) return res_limpar;
+
     std::size_t total_blocos = disco.total_blocos();
     std::size_t bytes_mapa = total_blocos / 8;
     std::size_t blocos_mapa = (bytes_mapa / TAMANHO_BLOCO) + (bytes_mapa % TAMANHO_BLOCO != 0 ? 1 : 0);

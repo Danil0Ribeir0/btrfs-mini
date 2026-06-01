@@ -57,3 +57,10 @@ std::expected<void, ErroDisco> DiscoVirtualEmMemoria::escrever_bloco(std::size_t
 std::size_t DiscoVirtualEmMemoria::total_blocos() const {
     return qtd_blocos;
 }
+
+std::expected<void, ErroDisco> DiscoVirtualEmMemoria::limpar() {
+    if (!esta_montado) return std::unexpected(ErroDisco::NaoMontado);
+
+    std::ranges::fill(armazenamento, std::byte{0});
+    return {};
+}

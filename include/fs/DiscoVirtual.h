@@ -24,4 +24,6 @@ public:
     virtual std::expected<void, ErroDisco> escrever_bloco(std::size_t indice_bloco, std::span<const std::byte, TAMANHO_BLOCO> buffer) = 0;
 
     [[nodiscard]] virtual std::size_t total_blocos() const = 0;
+
+    virtual std::expected<void, ErroDisco> limpar() = 0;
 };
