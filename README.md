@@ -1,4 +1,4 @@
-# Mini BTRFS - Sistema de Arquivos Funcional ✅
+# Mini BTRFS - Sistema de Arquivos Funcional
 
 Um sistema de arquivos em miniatura inspirado na arquitetura **BTRFS**, desenvolvido como projeto acadêmico para a disciplina de Sistemas Operacionais.
 
@@ -10,7 +10,7 @@ O projeto implementa conceitos avançados de sistemas de arquivos modernos:
 
 ---
 
-## ✨ Funcionalidades Implementadas
+## Funcionalidades Implementadas
 
 ### 1. **Camada Física**
 - ✅ **Disco Virtual** (`DiscoVirtualEmMemoria`): Simulação de disco em RAM com blocos de 4KB
@@ -42,7 +42,7 @@ O projeto implementa conceitos avançados de sistemas de arquivos modernos:
 
 ---
 
-## 🏗️ Arquitetura
+## Arquitetura
 
 ```
 app/
@@ -72,7 +72,7 @@ include/fs/
 
 ---
 
-## 🚀 Como Usar
+## Como Usar
 
 ### Compilação
 
@@ -130,7 +130,7 @@ Sessão encerrada com segurança.
 
 ---
 
-## 📋 Especificações Técnicas
+## Especificações Técnicas
 
 | Aspecto | Detalhes |
 |--------|----------|
@@ -144,7 +144,7 @@ Sessão encerrada com segurança.
 
 ---
 
-## 📚 Conceitos Implementados
+## Conceitos Implementados
 
 ### Copy-on-Write (CoW)
 Garante transações seguras: dados não são sobrescritos até que uma nova transação seja confirmada. Implementado via `clonar_bloco_cow` no gerenciador.
@@ -160,7 +160,7 @@ Rastreamento eficiente de blocos livres/ocupados com operações bit a bit.
 
 ---
 
-## ✅ Testes e Validação
+## Testes e Validação
 
 O projeto foi compilado e executado com sucesso demonstrando:
 - ✅ Formatação de disco
@@ -174,13 +174,13 @@ O projeto foi compilado e executado com sucesso demonstrando:
 
 ---
 
-## 📝 Autor
+## Autor
 
 Desenvolvido por **Danil Ribeiro**, **Davi de Cerqueira**, **Mateus Farias** e **Leo Lobo** como projeto acadêmico de Sistemas Operacionais.
 
 ---
 
-## 📖 Referências
+## Referências
 
 - BTRFS Filesystem: https://btrfs.readthedocs.io/
 - B-Tree Data Structures
