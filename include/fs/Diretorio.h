@@ -24,16 +24,16 @@ private:
 public:
     Diretorio(GerenciadorArvoreB& arvore_ref, uint64_t id, std::function<uint64_t()> gerador);
 
-    // Sem os 'const' no final!
     std::expected<Arquivo, ErroDisco> criar_arquivo(const std::string& nome);
     std::expected<Diretorio, ErroDisco> criar_diretorio(const std::string& nome);
     std::expected<Arquivo, ErroDisco> abrir_arquivo(const std::string& nome);
     std::expected<std::vector<InfoEntrada>, ErroDisco> listar();
     
-    // Métodos para navegação por caminho
     std::expected<Diretorio, ErroDisco> navegar_para(const std::string& caminho);
     std::expected<Arquivo, ErroDisco> criar_arquivo_em_caminho(const std::string& caminho);
     std::expected<Arquivo, ErroDisco> abrir_arquivo_em_caminho(const std::string& caminho);
+
+    std::expected<Diretorio, ErroDisco> criar_diretorio_em_caminho(const std::string& caminho);
 
     [[nodiscard]] uint64_t obter_id() const { return id_inode; }
 };

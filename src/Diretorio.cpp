@@ -148,3 +148,22 @@ std::expected<Arquivo, ErroDisco> Diretorio::abrir_arquivo_em_caminho(const std:
 
     return res_dir->abrir_arquivo(nome_arquivo);
 }
+
+std::expected<Diretorio, ErroDisco> Diretorio::criar_diretorio_em_caminho(const std::string& caminho) {
+    std::string path = caminho;
+    while (!path.empty() && (path.back() == '/' || path.back() == '\\')) path.pop_back();
+
+    size_t ultima_barra = path.find_last_of("/\\");
+
+    if (ultima_barra == std::string::npos) {
+        return criar_diretorio(path);
+    }
+
+    std::string caminho_dir = path.substr(0, ultima_barra);
+    std::string nome_dir = path.substr(ultima_barra + 1);
+
+    auto res_dir = navegar_para(caminho_dir);
+    if (!res_dir) return std::unexpected(res_dir.error());
+
+    return res_dir->criar_diretorio(nome_dir);
+}

@@ -98,7 +98,9 @@ int main() {
 
         std::istringstream iss(linha);
         std::string comando, argumento;
-        iss >> comando >> argumento;
+
+        iss >> comando;
+        std::getline(iss >> std::ws, argumento);
 
         if (comando == "exit" || comando == "sair") {
             break;
