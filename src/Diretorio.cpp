@@ -119,7 +119,6 @@ std::expected<Arquivo, ErroDisco> Diretorio::criar_arquivo_em_caminho(const std:
     size_t ultima_barra = caminho.find_last_of("/\\");
     
     if (ultima_barra == std::string::npos) {
-        // Sem caminho, cria na raiz
         return criar_arquivo(caminho);
     }
 
@@ -136,7 +135,6 @@ std::expected<Arquivo, ErroDisco> Diretorio::abrir_arquivo_em_caminho(const std:
     size_t ultima_barra = caminho.find_last_of("/\\");
     
     if (ultima_barra == std::string::npos) {
-        // Sem caminho, abre na raiz
         return abrir_arquivo(caminho);
     }
 

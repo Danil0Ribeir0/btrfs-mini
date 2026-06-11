@@ -88,7 +88,6 @@ int main() {
 
     std::cout << "\nBem-vindo ao shell BTRFS! Digite 'help' para comandos.\n";
 
-    // O Loop Principal de Interação
     while (true) {
         std::cout << "\nbtrfs:/> ";
         std::string linha;
